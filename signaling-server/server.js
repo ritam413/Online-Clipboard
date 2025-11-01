@@ -16,12 +16,14 @@ const io = new Server(httpServer, {
 const generate6digitCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
+let rooms = {}
 
 io.on('connection', (socket) => {
   console.log('a user connected')
   
   socket.on('create-room',(callback)=>{
     const code = generate6digitCode()
+    rooms[code]=[]
     socket.join(code)
     io.to(code).emit('room-created',code)
     console.log('room created 🏠:',code)
@@ -29,6 +31,8 @@ io.on('connection', (socket) => {
   })
 
   socket.on('message',({code,message})=>{
+    const msgObj = {sender:socket.id,message}
+    if(rooms[code]) rooms[code].push(msgObj)
     io.to(code).emit('message',{sender:socket.id,message})
     console.log(`Emitting ${message} this to room with Code: ${code}`);
   })
@@ -38,12 +42,13 @@ io.on('connection', (socket) => {
     socket.join(code)
     console.log(`${socket.id} joined `,code);
     socket.emit('room-joined',code)
+
+    if(rooms[code]) {
+      socket.emit('previous-messages',rooms[code])
+    }
   })
  
-  socket.on('recieve-message', ({code,message}) => {
-    console.log(`Emitting ${message} this to room with Code: ${code}`);
-    io.to(code).emit('message',message)
-  })
+ 
   
   socket.on('disconnect', (reasons) => {
     console.log(`user ${socket.id} disconnected: ${reasons}`);
