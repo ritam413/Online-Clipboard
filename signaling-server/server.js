@@ -26,25 +26,23 @@ io.on('connection', (socket) => {
     io.to(code).emit('room-created',code)
     console.log('room created 🏠:',code)
     callback(code)
-    io.to(code).emit('room-created_send-message')
   })
 
   socket.on('message',({code,message})=>{
-    io.to(code).emit('message',message)
+    io.to(code).emit('message',{sender:socket.id,message})
     console.log(`Emitting ${message} this to room with Code: ${code}`);
   })
 
 
-  // socket.on('join-room',(code)=>{
-  //   socket.join(code)
-  //   io.emit('room-joined 🏠: ',code)
-  //   io.to(code).emit()
-  //   console.log(`${socket.id} joined ${code}`);
-  // })
+  socket.on('join-room',({code})=>{
+    socket.join(code)
+    console.log(`${socket.id} joined `,code);
+    socket.emit('room-joined',code)
+  })
  
-  socket.on('recieve-message', (code,message) => {
-    io.to(code).emit('message',message)
+  socket.on('recieve-message', ({code,message}) => {
     console.log(`Emitting ${message} this to room with Code: ${code}`);
+    io.to(code).emit('message',message)
   })
   
   socket.on('disconnect', (reasons) => {
